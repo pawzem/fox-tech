@@ -4,10 +4,9 @@ _site/
 .jekyll-metadata
 .sass-cache/
 
-# Ruby / Bundler
+# Ruby / Bundler  (Gemfile.lock IS committed — reproducible builds + Dependabot)
 .bundle/
 vendor/
-Gemfile.lock
 
 # Node (only if front-end tooling is added later)
 node_modules/

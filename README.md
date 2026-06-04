@@ -66,14 +66,16 @@ desktop (useful for wide diagrams).
 
 ## Local development
 
-GitHub Pages builds the site for you on every push, so this is optional. To
-preview locally you need Ruby ≥ 3.0:
+Build locally before every push. Since this machine runs Ruby 2.6, the simplest
+path is Docker — no local Ruby/Jekyll install required (it uses the same
+`github-pages` gem set as GitHub Pages):
 
 ```bash
-bundle install
-bundle exec jekyll serve --livereload
-# → http://localhost:4000/fox-tech/
+make build      # build into _site/ — run this before pushing, to catch errors
+make serve      # live preview at http://localhost:4000/fox-tech/
 ```
+
+Prefer native Ruby (≥ 3.0)? `bundle install && bundle exec jekyll serve --livereload`.
 
 ## Deployment
 

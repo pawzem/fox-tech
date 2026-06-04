@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # The blog is built on GitHub Pages with GitHub's own pinned gem versions, so
+  # this mainly keeps the LOCAL build toolchain (the github-pages gem + Jekyll
+  # plugins) patched and surfaces security advisories. Updates are grouped into
+  # a single weekly PR to keep the noise down.
+  - package-ecosystem: bundler
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      jekyll-toolchain:
+        patterns: ["*"]
+    commit-message:
+      prefix: deps

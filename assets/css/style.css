@@ -65,8 +65,8 @@
 
   /* ── Layout ── */
   --wrap: 64rem;        /* header / footer chrome           */
-  --content: 46rem;     /* hero + post list                 */
-  --reading: 42rem;     /* article measure (~72 chars)      */
+  --content: 48rem;     /* hero + post list                 */
+  --reading: 48rem;     /* article measure (wider for code) */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -247,8 +247,8 @@ a:hover { color: var(--color-primary-container); }
   margin-top: var(--space-3); font-size: var(--fs-body-sm);
   color: var(--color-on-surface-muted); line-height: 1.45;
 }
-@media (min-width: 56rem) {
-  .post-content figure.wide { width: 52rem; margin-inline: calc((52rem - var(--reading)) / -2); }
+@media (min-width: 64rem) {
+  .post-content figure.wide { width: 58rem; margin-inline: calc((58rem - var(--reading)) / -2); }
 }
 
 /* Inline code */
@@ -265,7 +265,7 @@ a:hover { color: var(--color-primary-container); }
   overflow: hidden;
 }
 .post-content .highlight pre, .post-content pre {
-  margin: 0; padding: var(--space-5) var(--space-6);
+  margin: 0; padding: var(--space-5);
   overflow-x: auto; box-shadow: none;
 }
 .post-content pre code {
