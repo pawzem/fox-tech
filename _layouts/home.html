@@ -1,0 +1,25 @@
+---
+layout: default
+---
+<section class="hero wrap">
+  <p class="eyebrow">Field notes</p>
+  <h1 class="hero-title">{{ site.tagline }}</h1>
+  <p class="hero-lead">{{ site.description }}</p>
+</section>
+
+<section class="post-list wrap">
+  <p class="post-list-head">Latest writing</p>
+  <div class="cards">
+    {%- for post in site.posts -%}
+    <article class="post-card">
+      <div class="meta-row">
+        <time class="meta-date" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
+        {%- if post.tags %}<span class="tags">{% for tag in post.tags %}<span class="tag">{{ tag }}</span>{% endfor %}</span>{% endif -%}
+      </div>
+      <h2 class="post-card-title"><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h2>
+      <p class="post-card-excerpt">{{ post.excerpt | strip_html | strip_newlines | truncatewords: 36 }}</p>
+      <a class="read-more" href="{{ post.url | relative_url }}">Read article <span class="arrow">→</span></a>
+    </article>
+    {%- endfor -%}
+  </div>
+</section>

@@ -1,0 +1,24 @@
+# Jekyll build output & caches
+_site/
+.jekyll-cache/
+.jekyll-metadata
+.sass-cache/
+
+# Ruby / Bundler
+.bundle/
+vendor/
+Gemfile.lock
+
+# Node (only if front-end tooling is added later)
+node_modules/
+
+# Editor / OS cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Claude Code local settings (personal, not for the public repo)
+.claude/settings.local.json

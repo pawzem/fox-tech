@@ -1,0 +1,41 @@
+# --- Site ---
+title: Fox Tech
+tagline: Software craft, Domain-Driven Design & Event Storming
+description: >-
+  Practical writing on Domain-Driven Design, Event Storming and pragmatic
+  software craftsmanship — modeling, design patterns and code that shows its intent.
+author:
+  name: Paweł Zemła
+  title: Software architect & team manager
+  linkedin: "https://www.linkedin.com/in/pawel-zemla/"
+lang: en
+timezone: Europe/Warsaw
+
+# --- URLs ---
+# Project page lives at https://pawzem.github.io/fox-tech
+url: "https://pawzem.github.io"
+baseurl: "/fox-tech"
+github_user: pawzem
+permalink: /:year/:month/:title/
+
+# --- Build ---
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  syntax_highlighter: rouge
+  input: GFM
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+feed:
+  path: feed.xml
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - README.md
+  - .claude

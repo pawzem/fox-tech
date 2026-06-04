@@ -1,0 +1,35 @@
+---
+layout: default
+---
+<article class="post wrap">
+  <header class="post-header">
+    {%- if page.tags %}<div class="tags">{% for tag in page.tags %}<span class="tag">{{ tag }}</span>{% endfor %}</div>{% endif -%}
+    <h1 class="post-title">{{ page.title }}</h1>
+    <div class="post-meta">
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %-d, %Y" }}</time>
+      <span class="sep" aria-hidden="true">·</span>
+      <span class="byline">{{ site.author.name }}</span>
+    </div>
+  </header>
+
+  <div class="post-content">
+    {{ content }}
+  </div>
+
+  <footer class="post-footer">
+    <nav class="post-nav" aria-label="More articles">
+      {%- if page.previous %}
+      <a class="prev" href="{{ page.previous.url | relative_url }}">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">{{ page.previous.title }}</span>
+      </a>
+      {% else %}<span></span>{% endif -%}
+      {%- if page.next %}
+      <a class="next" href="{{ page.next.url | relative_url }}">
+        <span class="nav-dir">Next →</span>
+        <span class="nav-title">{{ page.next.title }}</span>
+      </a>
+      {% else %}<span></span>{% endif -%}
+    </nav>
+  </footer>
+</article>

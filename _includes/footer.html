@@ -1,0 +1,14 @@
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p class="footer-brand"><span class="brand-mark" aria-hidden="true">🦊</span> Fox Tech</p>
+    <p class="footer-tagline">{{ site.tagline }}</p>
+    <p class="footer-links">
+      <a href="{{ '/' | relative_url }}">Writing</a>
+      <a href="{{ '/about/' | relative_url }}">About</a>
+      <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+      {%- if site.author.linkedin %}<a href="{{ site.author.linkedin }}">LinkedIn</a>{%- endif %}
+      {%- if site.github_user %}<a href="https://github.com/{{ site.github_user }}">GitHub</a>{%- endif %}
+    </p>
+    <p class="footer-legal">© {{ site.time | date: '%Y' }} {{ site.author.name }}. Built with Jekyll, hosted on GitHub Pages.</p>
+  </div>
+</footer>
