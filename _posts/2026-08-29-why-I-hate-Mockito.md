@@ -630,6 +630,12 @@ One fix, in one place, shipped by the context that owns the rule. And the moment
 
 Just like we do with contract tests on our API but here on the context level. Which is exactly what we want as BC is candidate for extraction anyway(just a candidate I'm not saying you should do it blindly).
 
+# How would first example would look like then?
+
+1. If cross BC then contract testing with stubs preferably through BC facade
+2. If same BC but separate responsibility. I would probably architectured it to be truly independent and tested orchestration/choreography layer with integration test
+3. If nesting is the cleanest option and I have control over it. Then I would probably add some unit tests but tested overlay with real nested class.
+4. If nesting is the cleanest option and I don't have control over it. Then I would write thin anti corruption layer and treated it as under control thing then. Mayebe with stub for this foreign thing.
 
 # So do you drop Mockito everywhere you go?
 
