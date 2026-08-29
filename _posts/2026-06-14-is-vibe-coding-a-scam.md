@@ -44,7 +44,7 @@ So main rules were:
 - Initial tech stack: AWS, as cheap as possible but SaaS-grade — Lambda, Cognito, Aurora PostgreSQL Serverless v2, Java 25 / Spring Boot 4 as a modular monolith (Spring Modulith), GraalVM native image (I'll come back to this one), React, Stripe for payments
 - Interactions between modules must go through Facade Services only and if needed I can verify the architecture for coupling (more on that later on)
 - Preference for projections instead of direct DB read
-- No Mockito (I should probably write a separate one on why I think that it should be a niche library when there is no other choice)
+- No Mockito (I wrote [a separate post]({{ site.baseurl }}{% post_url 2026-08-29-why-i-hate-mockito %}) on why I think it should be a niche library for when there is no other choice)
 - Use good practices from Architects I respect: Eric Evans (DDD building blocks), Arlow & Neustadt (the Party/Asset archetypes), Adam Bien (AWS SAM setup), Tomasz Ducin (frontend architecture), and after the LLM proposed the Outbox Pattern I asked it to review the plan with Oskar Dudycz's guidance
 
 Generally I find DDD to be working superbly with LLMs. DDD puts a lot of focus on language and LLMs are Large Language Models so they should fit together well.

@@ -7,15 +7,15 @@ excerpt: "100% coverage, every gate green, and production still breaks. A small 
 ---
 
 Pretty much every developer has heard about the testing pyramid and has some test coverage rules in their repo.
-While generally it is a good and useful thing, I feel that sometimes we forget why those things exist and focus plainly on chasing the numbers and satisfying "clean code" principles.
+Both are good and useful things, but sometimes we forget why they exist and focus plainly on chasing the numbers and satisfying "clean code" principles.
 
 One of the symptoms of that approach, in my opinion, is the ubiquity of Mockito and similar mocking frameworks across several programming languages.
 
-I generally believe that it is a useful library, but its usefulness lies in the narrow niche of testing external, not-so-well-thought-out libraries. And what I saw all over the place over the length of my career is vastly the opposite.
+My problem with Mockito is not that it is a bad library. It is that it makes the wrong thing the easy thing: a mock freezes a copy of somebody else's contract inside your test, nothing ever checks that copy against the real thing, and the copies multiply across the repo. It does have a legitimate niche (I'll get to it at the end), but what I've seen throughout my career is the exact opposite of a niche.
 
-And while most projects face the issues I'm going to talk about, I rarely see the blame put on Mockito and its application. Most of the time I see the developer being the one hit by this blame game, while I would rather put it on the broken window syndrome and a general lack of thought due to impending deadlines.
+And while most projects face the issues I'm going to talk about, I rarely see the blame put on Mockito. The developer gets blamed, or the deadline, or the broken window somebody else left in the repo. All fair. But the tool that made the shortcut effortless deserves its share, and that is what this post is about.
 
-But first let me explain what the issues are and give you some arguments for why I generally forbid it altogether on projects I have a chance to lead from the ground up.
+I already promised this rant in [the vibe coding post]({{ site.baseurl }}{% post_url 2026-06-14-is-vibe-coding-a-scam %}), where "no Mockito" was one of the first rules I gave the LLM. So let me explain what the issues are, and why I forbid it altogether on projects I have a chance to lead from the ground up.
 
 ## The illusion of 100% coverage
 
@@ -25,15 +25,15 @@ The natural solution to this is test coverage.
 
 So we set the rule to 100% coverage and call it a day.
 
-Developers are smart folks, they will write the appropriate things, right?
+Developers are smart folks; they will write the appropriate things, right?
 
-So we've got e2e, IT, smoke, chaos and of course unit tests.
+So we've got e2e, integration, smoke, chaos and of course unit tests.
 
 But we don't want the tests to run for several hours on every build, so we apply the testing pyramid here, as it's a fairly standard project, and the units will be the main thing.
 
 We write the tests, the gates are green, we deploy to prod and it fails.
 
-How could it be? We got everything covered?
+How could it be? We had everything covered!
 
 Let me show you.
 
@@ -48,7 +48,7 @@ public class Multiplier {
 }
 ```
 
-And here is `PriceFormatter`, which takes the result and turns it into a price label like `15 PLN`. Two whole numbers multiplied always give a whole number, so casting to `long` is perfectly safe:
+And here is `PriceFormatter`, which takes the result and turns it into a price label like `15 PLN`. Two whole numbers multiplied always give a whole number, so casting to `long` is perfectly safe (or so we assume):
 
 ```java
 public class PriceFormatter {
@@ -66,7 +66,7 @@ public class PriceFormatter {
 }
 ```
 
-Now the tests. `Multiplier` first — 100% coverage:
+Now the tests. `Multiplier` first, 100% coverage:
 
 ```java
 class MultiplierTest {
@@ -115,7 +115,7 @@ class PriceFormatterTest {
 
 Everything is green, the coverage report shows 100%, the gate is happy, we ship it.
 
-Then a business requirement lands: big orders get a 5% discount. Someone opens `Multiplier` and does their job:
+Then a business requirement lands: big orders get a 5% discount. Someone opens `Multiplier` and does their job (yes, it is the wrong place for that rule; that is what deadlines do):
 
 ```java
 public double multiply(double a, double b) {
@@ -127,7 +127,7 @@ public double multiply(double a, double b) {
 }
 ```
 
-The contract just changed. The result is not a whole number anymore — `multiply(73, 137)` now returns `9500.95` (strictly `9500.949999999999`, because it is a `double` — hence the delta in the test below).
+The contract just changed. The result is not a whole number anymore: `multiply(73, 137)` now returns `9500.95` (strictly `9500.949999999999`, because it is a `double`, hence the delta in the test below).
 
 So of course we also update the tests.
 
@@ -138,9 +138,9 @@ void discountsBigOrder() {
 }
 ```
 
-Green. And `PriceFormatterTest`? Also green. 
+Green. And `PriceFormatterTest`? Also green.
 
-Of course it is — its `Multiplier` is not the real `Multiplier`. It's a Mockito puppet frozen in time, still answering `10_001.0` like nothing happened. The stubbed answers live in a completely different file than the contract they imitate, and no compiler and no test runner will ever tell you they are now a lie. If ten classes stub `Multiplier`, you have ten copies of the old contract to hunt down by hand — and nothing fails when you miss one.
+Of course it is. Its `Multiplier` is not the real `Multiplier`. It's a Mockito puppet frozen in time, still answering `10_001.0` like nothing happened. The stubbed answers live in a completely different file than the contract they imitate, and no compiler and no test runner will ever tell you they are now a lie. If ten classes stub `Multiplier`, you have ten copies of the old contract to hunt down by hand, and nothing fails when you miss one.
 
 Meanwhile in production, `priceLabel(73, 137)` happily returns `9500 PLN`. The customer was promised `9500.95`, and 95 groszy silently fell on the floor. Every unit is 100% covered and every unit "works". The system doesn't.
 
@@ -165,9 +165,9 @@ PriceFormatterIntegrationTest > labelsBigOrder() FAILED
 
 No gate flagged this. Somebody had to sit down, suspect it, and go find it manually.
 
-## But that's not Mockito's fault, developers should have written the IT and QA should have tested it manually as well, right?
+## But that's a process failure, not Mockito's fault, right?
 
-Yes, but as I already pointed out, now it's easier to forget about it.
+Yes. Developers should have written the integration test, and QA should have caught it manually. But the whole point is that it became easy to forget about it.
 
 Also, since it was really easy to mock it, we didn't need to think that much about the contract of the classes either.
 
@@ -175,13 +175,13 @@ If it's easy to inject a mock, we don't need to put as much thought into anti-co
 
 We just add it, mock it and move on to the next task. Examples like that are already in the repo, so why bother. I don't have time, and I'm running out of tokens for this month anyway.
 
-But I agree, this is a testing strategy failure, not the mocks themselves.
+But I agree, this is a failure of the testing strategy, not of the mocks themselves.
 
 But what about this?
 
-## Let's mock a repository — I want one reason for the failure
+## Let's mock a repository: I want one reason for the failure
 
-This time we do everything by the book. No anemic bag of getters and setters — a rich domain entity that guards its own invariants. You simply cannot construct an `Account` without a balance or without a bonus rate:
+This time we do everything by the book. No anemic bag of getters and setters, but a rich domain entity that guards its own invariants. You simply cannot construct an `Account` without a balance or without a bonus rate:
 
 ```java
 public class Account {
@@ -200,7 +200,7 @@ public class Account {
         balance = balance.add(bonusRate.multiply(balance));
     }
 
-    // getters
+    // accessors: id(), balance(), bonusRate()
 }
 ```
 
@@ -214,7 +214,7 @@ CREATE TABLE account (
 );
 ```
 
-The service takes the account from the repository, applies the change, puts it back. You may notice there is no validation in this method — and that is on purpose. The entity IS the validation. If an `Account` exists, its values are correct. We validate once, at the border, and the rest of the code just does the calculation:
+The service takes the account from the repository, applies the change, puts it back. You may notice there is no validation in this method, and that is on purpose. The entity IS the validation. If an `Account` exists, its values are correct. We validate once, at the border, and the rest of the code just does the calculation:
 
 ```java
 public class BonusService {
@@ -238,6 +238,7 @@ The repository is plain JDBC for illustration purposes. A SELECT that maps the r
 ```java
 public Account find(long id) {
     // SELECT id, balance, bonus_rate FROM account WHERE id = ?
+    // ... prepare and execute it, then map the row:
     return new Account(
             results.getLong("id"),
             results.getBigDecimal("balance"),
@@ -245,8 +246,8 @@ public Account find(long id) {
 }
 ```
 
-Now the tests. The entity test covers the calculation and documents the invariants (`rejectsAccountWithoutBonusRate` expects the constructor to throw). 
-The repository gets a real integration test, Testcontainers spinning up an actual Postgres, real schema, real rows. 
+Now the tests. The entity test covers the calculation and documents the invariants (`rejectsAccountWithoutBonusRate` expects the constructor to throw).
+The repository gets a real integration test, Testcontainers spinning up an actual Postgres, real schema, real rows.
 And the service is a "unit":
 
 ```java
@@ -273,15 +274,15 @@ class BonusServiceTest {
 ```
 
 The clean code rule is that a test should have exactly one reason to fail.
-The entity test has one: the calculation broke. 
-The repository test has one: the SQL or the mapping broke. 
+The entity test has one: the calculation broke.
+The repository test has one: the SQL or the mapping broke.
 
-Now look at the mocked test above and ask the same question. The calculation is already tested on the entity. The SQL is already tested on the repository. The only thing left is "the service calls the methods that the service calls", restated with `when` and `verify`. 
+Now look at the mocked test above and ask the same question. The calculation is already tested on the entity. The SQL is already tested on the repository. The only thing left is "the service calls the methods that the service calls", restated with `when` and `verify`.
 Its one reason to fail is you refactoring the service. It guards nothing. It just burns time on every pipeline run (and these days tokens too), because your AI agent will happily regenerate it on every change.
 
-But fine, it's green and coverage is happy. 
+But fine, it's green and coverage is happy.
 
-Then the new feature: the bonus program becomes opt-in. 
+Then the new feature: the bonus program becomes opt-in.
 
 Accounts that never joined simply have no bonus rate. So a migration ships:
 
@@ -295,21 +296,21 @@ The database check is gone. The entity follows:
 public Account(long id, BigDecimal balance, BigDecimal bonusRate) {
     this.id = id;
     this.balance = requireNonNull(balance, "balance must not be null");
-    this.bonusRate = bonusRate; // opt-in program: null until the customer joins
+    this.bonusRate = bonusRate; // new business rule: bonus program is opt-in, null until the customer joins
 }
 ```
 
-Both places that used to guarantee the invariant dropped it in the same ticket. 
+Both places that used to guarantee the invariant dropped it in the same ticket.
 
 The entity test is updated: `rejectsAccountWithoutBonusRate` becomes `allowsAccountWithoutBonusRate`.
 
-Green. 
+Green.
 
-The repository test even gets a new case proving that a NULL column maps to a null field just fine. 
+The repository test even gets a new case proving that a NULL column maps to a null field just fine.
 
-Green. 
+Green.
 
-And `BonusServiceTest`? Untouched and green. Its account is built by hand inside the test, by a person who wrote it back when nulls were impossible. 
+And `BonusServiceTest`? Untouched and green. Its account is built by hand inside the test, by a person who wrote it back when nulls were impossible.
 The one place that knows what the data actually looks like is the database. Which is exactly the thing we replaced with a mock.
 
 Then the nightly bonus job runs on prod:
@@ -317,8 +318,8 @@ Then the nightly bonus job runs on prod:
 ```
 java.lang.NullPointerException: Cannot invoke "java.math.BigDecimal.multiply(java.math.BigDecimal)"
         because "this.bonusRate" is null
-    at Account.applyYearlyBonus(Account.java:20)
-    at BonusService.applyYearlyBonus(BonusService.java:14)
+    at com.example.mockito.banking.v2.Account.applyYearlyBonus(Account.java:20)
+    at com.example.mockito.banking.v2.BonusService.applyYearlyBonus(BonusService.java:14)
 ```
 
 Every single class did its part and has green tests to prove it. The system still went down at 2 a.m., and again somebody had to find it manually.
@@ -384,22 +385,22 @@ BonusServiceIntegrationTest > skipsAccountThatNeverJoinedTheBonusProgram() FAILE
         at com.example.mockito.banking.v2.BonusService.applyYearlyBonus(BonusService.java:14)
 ```
 
-One test. It exercises the SQL, the row mapping, the entity invariants and the service flow in one go, and every one of its possible failures means something true about the system. 
+One test method. It exercises the SQL, the row mapping, the entity invariants and the service flow in one go, and every one of its possible failures means something true about the system. Does that break the one-reason rule? Splitting it into more methods with one assertion each would not help; every copy still runs the whole stack, so every copy has the same ways to fail. What keeps the rule is the layering: the entity test owns "the calculation broke", the repository test owns "the SQL or the mapping broke", so when this test goes red and those stay green, its one reason is "the pieces do not fit together". That is the reason nothing else can check, and the one the mock threw away.
 
 It would have turned the pipeline red minutes after the migration landed in the PR.
-Which means a shorter feedback loop, with the response either local or on CI.
+Which means a shorter feedback loop: the failure lands in your terminal or on CI, not in a pager at 2 a.m.
+
+Yes, somebody still had to put the NULL row into the fixture. But that somebody is the person who wrote the migration, in the same PR, right next to the schema change. Not every developer who ever built an `Account` by hand inside a test. A hand-rolled fake repository with a hand-built `Account` would have lied exactly like the mock did. The difference is where the knowledge about the data lives: in one fixture that mirrors prod, or in a hundred `new Account(...)` calls scattered across test classes. (In the companion repo every test builds its own table, to keep each file readable on its own. In a real project it is one migration script and one seed dataset shared by every integration test.)
 
 And the whole setup costs a Docker container that starts in a couple of seconds, which on any modern build machine is a rounding error compared to a prod incident and its follow-up.
 
-## Ok, but we've got Testcontainers here, we need mocks for the rest. Right?
+## OK, Testcontainers for the database, but we still need mocks for the rest, right?
 
 No.
 
-The answer for the rest of the issues is either stubs or proper contract tests.
+The answer for the rest is stubs, kept honest by contract tests.
 
-If we structure our repo by bounded context or features properly,
-
-e.g.
+It starts with structuring the repo by bounded context (BC) or by feature. This is the tenant context in the companion repo:
 
 ```
 shared/identity/TenantId.java        a typed id (shared-kernel value object)
@@ -419,9 +420,9 @@ tenant/
 └── package-info.java                   @ApplicationModule in Spring Modulith
 ```
 
-That is the tenant context's layout in the companion repo, kept as plain Java so it stays small. In a real Spring Modulith app the contract package would also hold the integration events (`TenantRegistered`, `TenantRenamed`) and the HTTP wire records, the impl would be `@Transactional`, and a `TenantController` would sit next to it — none of that changes the testing story below.
+It is kept as plain Java so it stays small. In a real Spring Modulith app the contract package would also hold the integration events (`TenantRegistered`, `TenantRenamed`) and the HTTP wire records, the impl would be `@Transactional`, and a `TenantController` would sit next to it. None of that changes the testing story below.
 
-We can test our policies and helper classes in isolation inside, but for everything outside we put a stub.
+Inside the context, policies and helper classes get plain unit tests. Every other context that depends on the tenant context gets a stub.
 
 The facade is a plain interface:
 
@@ -444,7 +445,7 @@ public class TenantServiceStub implements TenantService {
 
     private final Map<TenantId, TenantDto> tenants = new LinkedHashMap<>();
 
-    // the constructor pre-seeds the map with the well-known test cards — see below
+    // the constructor pre-seeds the map with the well-known test cards (see below)
 
     @Override
     public TenantDto register(String slug, String displayName) {
@@ -460,27 +461,26 @@ public class TenantServiceStub implements TenantService {
 }
 ```
 
-So the stub is one of two things. Either a small in-memory version of the facade, like above. Or an even simpler fake that returns constants.
-With no logic inside, it just knows the answers the way a flash card does. 
+So the stub is one of two things. Either a small in-memory version of the facade, like above. Or an even simpler one that returns constants and, with no logic inside, just knows the answers the way a flash card does. (Fowler and Meszaros would call the first one a *fake* and reserve *stub* for the second. I call both stubs, because the distinction that matters here is not how much logic is inside, but who owns it.)
 
-What keeps the second kind from turning into another Mockito is that those constants are not invented privately by every test that needs them. They are static test cards, published in the contract package right next to the facade. 
+What keeps the second kind from turning into another Mockito is that those constants are not invented privately by every test that needs them. They are static test cards, published in the contract package right next to the facade.
 
-The same idea as Stripe's test card numbers:
+The same idea as [Stripe's test card numbers](https://docs.stripe.com/testing):
 
 ```java
 public final class TenantCards {
 
-    /** Always present in the stub, active — the happy path. */
+    /** Always present in the stub, active: the happy path. */
     public static final TenantDto NORMAL_TENANT = new TenantDto(
             new TenantId(UUID.fromString("00000000-0000-0000-0000-000000000001")),
             "normal-tenant", "Normal Tenant", TenantStatus.ACTIVE);
 
-    /** Always present in the stub, suspended — for the "this should be refused" paths. */
+    /** Always present in the stub, suspended: for the "this should be refused" paths. */
     public static final TenantDto SUSPENDED_TENANT = new TenantDto(
             new TenantId(UUID.fromString("00000000-0000-0000-0000-000000000002")),
             "suspended-tenant", "Suspended Tenant", TenantStatus.SUSPENDED);
 
-    /** Guaranteed to never exist — for the not-found paths. */
+    /** Never seeded by the stub or by any fixture: for the not-found paths. */
     public static final TenantId UNKNOWN_TENANT =
             new TenantId(UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"));
 }
@@ -496,13 +496,11 @@ public TenantServiceStub() {
 ```
 
 Downstream nobody programs answers into a mock.
-You pick what you need: `NORMAL_TENANT` for the happy path, `SUSPENDED_TENANT` when you want trouble, `UNKNOWN_TENANT` for the not-found branch. 
+You pick what you need: `NORMAL_TENANT` for the happy path, `SUSPENDED_TENANT` when you want trouble, `UNKNOWN_TENANT` for the not-found branch.
 
-And since the cards live in the contract package, when the tenant context changes what a suspended tenant means, the cards change in the same commit. 
+Since the cards live in the contract package, when the tenant context changes what a suspended tenant means, the cards change in the same commit, and every downstream test holding one feels it immediately.
 
-And every downstream test holding one feels it immediately.
-
-Internally we test that the real thing behaves the same as the stub, and every other bounded context gets the stub. (They can also get the real thing for IT, but that's not the point now.)
+Internally we test that the real thing behaves the same as the stub, and every other bounded context gets the stub. (They can also get the real thing for integration tests, but that's not the point now.)
 
 The mechanism is one class. The contract, written down as executable behavior:
 
@@ -543,6 +541,8 @@ public abstract class TenantServiceContract {
         assertThrows(IllegalStateException.class,
                 () -> service().rename(TenantId.newId(), "Ghost Corp"));
     }
+
+    // ... plus one more case: find() on an unknown id returns empty
 }
 ```
 
@@ -559,7 +559,7 @@ class TenantServiceImplTest extends TenantServiceContract {
 
     @BeforeEach
     void setUp() throws Exception {
-        // real schema in the container, service wired with the real repository
+        // ... real schema created in the container, then the service wired with the real repository:
         service = new TenantServiceImpl(new JdbcTenantRepository(dataSource));
     }
 
@@ -570,7 +570,7 @@ class TenantServiceImplTest extends TenantServiceContract {
 }
 ```
 
-And the stub runs the exact same suite in memory:
+The stub runs the exact same suite in memory:
 
 ```java
 class TenantServiceStubTest extends TenantServiceContract {
@@ -581,12 +581,14 @@ class TenantServiceStubTest extends TenantServiceContract {
     protected TenantService service() {
         return stub;
     }
+
+    // ... plus a test that the well-known cards are really in there
 }
 ```
 
-And when somebody really needs the real thing rather than the stub, the answer is still not Mockito.
+When somebody really needs the real thing rather than the stub, the answer is still not Mockito.
 
-It is the real implementation with in-memory variants of its dependencies. 
+It is the real implementation with in-memory variants of its dependencies.
 
 `TenantRepository` is an interface with two implementations, the JDBC one and an in-memory one (living in the test sources), so the same contract suite gets a third run.
 
@@ -602,7 +604,7 @@ class TenantServiceInMemoryTest extends TenantServiceContract {
 }
 ```
 
-Meanwhile in the billing context nobody mocks anything. You take the stub and use it like the real thing.
+Meanwhile in the billing context nobody mocks anything. You take the stub and use it like the real thing: register a tenant when you need a fresh one, pick a card when you need a known one.
 
 ```java
 // No @Mock, no when(), no verify()
@@ -626,6 +628,14 @@ class InvoiceServiceTest {
     }
 
     @Test
+    void refusesInvoiceForSuspendedTenant() {
+        var error = assertThrows(IllegalStateException.class,
+                () -> invoices.invoiceHeader(TenantCards.SUSPENDED_TENANT.id(), new BigDecimal("250.00")));
+
+        assertEquals("Tenant is suspended: suspended-tenant", error.getMessage());
+    }
+
+    @Test
     void refusesInvoiceForUnknownTenant() {
         assertThrows(IllegalStateException.class,
                 () -> invoices.invoiceHeader(TenantCards.UNKNOWN_TENANT, new BigDecimal("250.00")));
@@ -633,22 +643,24 @@ class InvoiceServiceTest {
 }
 ```
 
-Then if we change the contract, our stub tests fail, and if the changes are meaningful for other contexts, changes to the stub propagate test failures outside.
+Now imagine the contract changes: registration starts in `SUSPENDED` until activation, `rename` starts returning the old name, or a duplicate slug stops throwing and gets silently ignored instead.
 
-Imagine registration starts in `SUSPENDED` until activation, `rename` starts returning the old name, or a duplicate slug stops throwing and gets silently ignored instead.
-
-When you change the implementation, `TenantServiceImplTest` (and `TenantServiceInMemoryTest`) go red, you fix the contract suite — and now `TenantServiceStubTest` is red until the stub follows.
+When you change the implementation, `TenantServiceImplTest` (and `TenantServiceInMemoryTest`) go red, so you fix the contract suite, and now `TenantServiceStubTest` is red until the stub follows.
 
 One fix, in one place, shipped by the context that owns the rule. And the moment the stub starts answering differently, every consuming context's tests run against the new reality. `InvoiceServiceTest` breaks only if the change actually matters to billing. Compare that with hunting down every `when(tenantService.find(...))` scattered across the repo.
 
-Just like we do with contract tests on our API, but here on the context level. Which is exactly what we want, as a BC is a candidate for extraction anyway (just a candidate — I'm not saying you should do it blindly).
+Just like we do with contract tests on our API, but here on the context level. Which is exactly what we want, as a BC is a candidate for extraction anyway (just a candidate; I'm not saying you should do it blindly).
 
 ## How would the first example look then?
 
-1. If cross-BC, then contract testing with stubs, preferably through the BC facade.
-2. If same BC but separate responsibility, I would probably architect it to be truly independent and test the orchestration/choreography layer with an integration test.
-3. If nesting is the cleanest option and I have control over it, then I would probably add some unit tests, but test the overlay with the real nested class.
-4. If nesting is the cleanest option and I don't have control over it, then I would write a thin anti-corruption layer and treat it as a thing under my control. Maybe with a stub for the foreign thing.
+`PriceFormatter` and `Multiplier` live in the same bounded context, and `Multiplier` is a pure function with no dependencies of its own. There is nothing to isolate from. `PriceFormatterTest` should simply do `new PriceFormatter(new Multiplier())`. That is exactly the "integration" test you saw above, and it is really just a unit test with the real collaborator. The day the contract changes, it goes red in the same PR.
+
+The general rule I follow when one class needs another:
+
+1. If they live in different bounded contexts, contract testing with stubs, preferably through the BC facade.
+2. If they live in the same BC but have separate responsibilities, I would probably architect them to be truly independent and test the orchestration/choreography layer with an integration test.
+3. If one simply uses the other and I control both (our `PriceFormatter` and `Multiplier`), I add unit tests to the inner one and test the outer one with the real inner one.
+4. If one simply uses the other and I don't control the inner one, I write a thin anti-corruption layer and treat it as a thing under my control. The foreign thing gets a stub, or (see below) the one mock I tolerate.
 
 ## So do you drop Mockito everywhere you go?
 
@@ -658,15 +670,21 @@ Even if doable, usually there is better stuff to do, and we can add e2e tests fo
 
 But I do pay extra attention to those problems in code review when I notice any mocks in the PR, and it is easier for me to disallow mocks from the start on new stuff.
 Especially in the LLM era. Mockito makes it too easy for an LLM to make wrong assumptions.
-Also, a fix in the stub is a fix in one place, while a fix in the mocks cascades across the repo, so I feel that I waste fewer tokens that way. Especially on finding out the connections. I was saved by facade tests multiple times already.
+Also, a fix in the stub is a fix in one place, while a fix in the mocks cascades across the repo, so I feel that I waste fewer tokens that way, especially on the agent rediscovering how the modules are wired. Facade tests have saved me more than once already.
 
-All the code from this article — both failing examples and the stub/contract-test setup — is in the companion repo: [github.com/pawzem/IHateMockitoExamples](https://github.com/pawzem/IHateMockitoExamples). The build is red on purpose; the two failing tests are the whole point.
+And the niche I promised at the beginning? A third-party SDK that hands you final classes and static factories, where an in-memory fake would cost more than it is worth. It goes behind a thin anti-corruption layer, the layer's own test is the one place where a Mockito mock of the SDK is allowed, and everything else in the codebase gets the layer's stub. The other case is a fire-and-forget side effect with no state to assert on ("the email really was handed to the mail client"), and even there a three-line fake that records the call usually does the job. That is the whole niche: one test class per foreign library, not one `@Mock` per collaborator.
 
-Hope the article was useful to you, and if I've sent it to you over a code review then wow, I didn't expect you would actually read it. Thanks! :D
+All the code from this article, both failing examples and the stub/contract-test setup, is in the companion repo: [github.com/pawzem/IHateMockitoExamples](https://github.com/pawzem/IHateMockitoExamples). The build is red on purpose; the two failing tests are the whole point.
+
+Hope the article was useful to you, and if I've sent it to you over a code review then wow, I didn't expect you would actually read it. I really appreciate it, thanks! :D
 
 ## References
 
-- Companion repo with all the code from this article (the build is red on purpose): [github.com/pawzem/IHateMockitoExamples](https://github.com/pawzem/IHateMockitoExamples)
+- Martin Fowler, [Mocks Aren't Stubs](https://martinfowler.com/articles/mocksArentStubs.html): the classic on the distinction (and the vocabulary I bend above)
+- Gerard Meszaros, [xUnit Test Patterns: Test Double](http://xunitpatterns.com/Test%20Double.html)
+- [Stripe test cards](https://docs.stripe.com/testing): the inspiration for the test-card idea
+- [Spring Modulith: application modules and named interfaces](https://docs.spring.io/spring-modulith/reference/fundamentals.html)
+- [Testcontainers](https://testcontainers.com/)
 
 ## AI disclaimer
-Opinions are entirely mine. Text is also mine (mostly — some of the styling was done with AI). Code was generated entirely by an AI, but with exact details of what should be in there.
+Opinions are entirely mine. Text is also mine (mostly, some of the styling was done with AI). Code was generated entirely by an AI, but with exact details of what should be in there.
