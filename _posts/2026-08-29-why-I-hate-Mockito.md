@@ -6,36 +6,36 @@ tags: [Java, Testing, Mockito, Unit Tests, Test Coverage]
 excerpt: "100% coverage, every gate green, and production still breaks. A small example of how Mockito freezes old contracts inside your tests and quietly waves regressions through."
 ---
 
-Pretty much every developer have heard about testing pyramid and has some test coverage rules in their repo.
-While generally it is good and useful thing I feel that sometimes we forget why those things exist and we focus plainly on chasing the numbers and satisfying "clean code" principles.
+Pretty much every developer has heard about the testing pyramid and has some test coverage rules in their repo.
+While generally it is a good and useful thing, I feel that sometimes we forget why those things exist and focus plainly on chasing the numbers and satisfying "clean code" principles.
 
-One of the symptoms of that approach in my opinion is ubiquity if Mockito and similar mocking frameworks in several programing languages.
+One of the symptoms of that approach, in my opinion, is the ubiquity of Mockito and similar mocking frameworks across several programming languages.
 
-I generally believe that it is useful library but its usefulness should be applied to general niche of testing external, not to well thought libraries. And what I saw all over the place over length of my carrier is vastly the opposite thing.
+I generally believe that it is a useful library, but its usefulness lies in the narrow niche of testing external, not-so-well-thought-out libraries. And what I saw all over the place over the length of my career is vastly the opposite.
 
-And while most project face the issues I'm going to talk about I rarely see the blame to be put on Mockito and it's application. Most of the time is see the developer being the one getting hit by this blame game while I would rather tu put it on the broken window syndrome and general lack of thoughts due to impeding deadliness.
+And while most projects face the issues I'm going to talk about, I rarely see the blame put on Mockito and its application. Most of the time I see the developer being the one hit by this blame game, while I would rather put it on the broken window syndrome and a general lack of thought due to impending deadlines.
 
-But first let me explain what the issues and give you some arguments why I generally forbid it all together on projects I have a chance to lead from the ground up. 
+But first let me explain what the issues are and give you some arguments for why I generally forbid it altogether on projects I have a chance to lead from the ground up.
 
-# The illusion of 100% coverage
+## The illusion of 100% coverage
 
-So let's say we want to be extra sure that everything is going to be fine, and we don't want to introduce any regression while bringing on the new features.
+So let's say we want to be extra sure that everything is going to be fine, and we don't want to introduce any regressions while bringing in the new features.
 
-The natural solution to this is testing coverage.
+The natural solution to this is test coverage.
 
-So we set the rule to 100% covered and call it a day. 
+So we set the rule to 100% coverage and call it a day.
 
-Developers are smart folks they will write the appropriate things right?
+Developers are smart folks, they will write the appropriate things, right?
 
-So we got e2e, it, smoke, chaos and of course unit tests.
+So we've got e2e, IT, smoke, chaos and of course unit tests.
 
-But we don't want the test to be run for several hours on every run so we want to apply testing pyramid heer as it fairly standard project so the units will be the mian thing.
+But we don't want the tests to run for several hours on every build, so we apply the testing pyramid here, as it's a fairly standard project, and the units will be the main thing.
 
-We write the test, gates are green we deploy to prod and it fails.
+We write the tests, the gates are green, we deploy to prod and it fails.
 
 How could it be? We got everything covered?
 
-Let me show you
+Let me show you.
 
 Meet `Multiplier`. It multiplies `a * b`. That's the whole job.
 
@@ -85,7 +85,7 @@ class MultiplierTest {
 }
 ```
 
-`PriceFormatter` is a unit, and units must be tested in isolation, right? So we mock the collaborator, just like the common sense says:
+`PriceFormatter` is a unit, and units must be tested in isolation, right? So we mock the collaborator, just like common sense says:
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -127,9 +127,9 @@ public double multiply(double a, double b) {
 }
 ```
 
-The contract just changed. The result is not a whole number anymore — `multiply(73, 137)` now returns `9500.95`. 
+The contract just changed. The result is not a whole number anymore — `multiply(73, 137)` now returns `9500.95` (strictly `9500.949999999999`, because it is a `double` — hence the delta in the test below).
 
-So of course we alls update the tests.
+So of course we also update the tests.
 
 ```java
 @Test
@@ -165,21 +165,21 @@ PriceFormatterIntegrationTest > labelsBigOrder() FAILED
 
 No gate flagged this. Somebody had to sit down, suspect it, and go find it manually.
 
-# But that's not Mockito fault, developers should have written the IT and QA should have tested it manually as well right?
+## But that's not Mockito's fault, developers should have written the IT and QA should have tested it manually as well, right?
 
-Yes but as I already pointed, now it's easier to forget about it. 
+Yes, but as I already pointed out, now it's easier to forget about it.
 
-Also since it was really ease to Mock it we didn't need to think that much about the contract of the classes as well.
+Also, since it was really easy to mock it, we didn't need to think that much about the contract of the classes either.
 
-If it's easy to inject mock, we don't need to put as many thoughts to any anti corruption layers or proper interfacing.
+If it's easy to inject a mock, we don't need to put as much thought into anti-corruption layers or proper interfacing.
 
-We just add it mock it and move on onto the next task. Examples like that are already in the repo so why bother. I don't have time, and I'm running out of tokens for this mont anyway.
+We just add it, mock it and move on to the next task. Examples like that are already in the repo, so why bother. I don't have time, and I'm running out of tokens for this month anyway.
 
-But I agree, this is testing strategy failure not the Mocks itself.
+But I agree, this is a testing strategy failure, not the mocks themselves.
 
-But what about this.
+But what about this?
 
-# Let's mock a repository I want one reason for the failure
+## Let's mock a repository — I want one reason for the failure
 
 This time we do everything by the book. No anemic bag of getters and setters — a rich domain entity that guards its own invariants. You simply cannot construct an `Account` without a balance or without a bonus rate:
 
@@ -233,7 +233,7 @@ public class BonusService {
 }
 ```
 
-The repository for is plain JDBC for illustration purposes. A SELECT that maps the row into the entity, and an UPDATE going the other way:
+The repository is plain JDBC for illustration purposes. A SELECT that maps the row into the entity, and an UPDATE going the other way:
 
 ```java
 public Account find(long id) {
@@ -272,12 +272,12 @@ class BonusServiceTest {
 }
 ```
 
-They clean code rule is that test should have exactly one reason to fail. 
+The clean code rule is that a test should have exactly one reason to fail.
 The entity test has one: the calculation broke. 
 The repository test has one: the SQL or the mapping broke. 
 
 Now look at the mocked test above and ask the same question. The calculation is already tested on the entity. The SQL is already tested on the repository. The only thing left is "the service calls the methods that the service calls", restated with `when` and `verify`. 
-Its one reason to fail is you refactoring the service. It guards nothing. It just burns time on every pipeline run(and these days tokens too), because your AI agent will happily regenerate it on every change.
+Its one reason to fail is you refactoring the service. It guards nothing. It just burns time on every pipeline run (and these days tokens too), because your AI agent will happily regenerate it on every change.
 
 But fine, it's green and coverage is happy. 
 
@@ -301,7 +301,7 @@ public Account(long id, BigDecimal balance, BigDecimal bonusRate) {
 
 Both places that used to guarantee the invariant dropped it in the same ticket. 
 
-The entity test is updated `rejectsAccountWithoutBonusRate` becomes `allowsAccountWithoutBonusRate`. 
+The entity test is updated: `rejectsAccountWithoutBonusRate` becomes `allowsAccountWithoutBonusRate`.
 
 Green. 
 
@@ -380,22 +380,24 @@ Run it against the migrated schema, and it fails immediately, with the exact sam
 BonusServiceIntegrationTest > skipsAccountThatNeverJoinedTheBonusProgram() FAILED
     java.lang.NullPointerException: Cannot invoke "java.math.BigDecimal.multiply(java.math.BigDecimal)"
         because "this.bonusRate" is null
+        at com.example.mockito.banking.v2.Account.applyYearlyBonus(Account.java:20)
+        at com.example.mockito.banking.v2.BonusService.applyYearlyBonus(BonusService.java:14)
 ```
 
 One test. It exercises the SQL, the row mapping, the entity invariants and the service flow in one go, and every one of its possible failures means something true about the system. 
 
 It would have turned the pipeline red minutes after the migration landed in the PR.
-Which means a shorter a feedback loop with response either local or on the CI. 
+Which means a shorter feedback loop, with the response either local or on CI.
 
-And the whole setup costs a Docker container that starts in a couple of seconds, which on any modern build machine is a rounding error compared to prod incident, and it's follow up.
+And the whole setup costs a Docker container that starts in a couple of seconds, which on any modern build machine is a rounding error compared to a prod incident and its follow-up.
 
-# Ok but we got test containers here, we need mocks for the rest. Right?
+## Ok, but we've got Testcontainers here, we need mocks for the rest. Right?
 
 No.
 
-Then answer for the rest of the issues are either stubs or proper contract tests.
+The answer for the rest of the issues is either stubs or proper contract tests.
 
-I we structurize our repo but bounded context or features properly
+If we structure our repo by bounded context or features properly,
 
 e.g.
 
@@ -403,24 +405,23 @@ e.g.
 shared/identity/TenantId.java        a typed id (shared-kernel value object)
 tenant/
 ├── contract/                        ← the ONLY public package
-│   ├── package-info.java                @NamedInterface("contract")
+│   ├── package-info.java                @NamedInterface("contract") in Spring Modulith
 │   ├── TenantService.java               the facade: commands + queries
 │   ├── TenantServiceStub.java           in-memory impl for other modules' tests
-│   ├── TenantDto.java                    read-side view returned by the service
+│   ├── TenantCards.java                 well-known test data the stub is seeded with
+│   ├── TenantDto.java                   read-side view returned by the service
 │   ├── TenantStatus.java
-│   ├── TenantRegistered.java            integration events
-│   ├── TenantRenamed.java
-│   ├── RegisterTenantRequest.java       HTTP wire records
-│   ├── TenantResponse.java
 │   └── TenantSlugAlreadyTakenException.java
-├── Tenant.java                      ← aggregate            (package-private)
-├── TenantServiceImpl.java           ← @Transactional impl  (package-private)
-├── TenantRepository.java            ← Spring Data JDBC      (package-private)
-├── TenantController.java            ← REST transport        (package-private)
-└── package-info.java                   @ApplicationModule(allowedDependencies)
+├── Tenant.java                      ← aggregate             (package-private)
+├── TenantServiceImpl.java           ← the real impl         (package-private)
+├── TenantRepository.java            ← repository interface  (package-private)
+├── JdbcTenantRepository.java        ← its JDBC variant      (package-private)
+└── package-info.java                   @ApplicationModule in Spring Modulith
 ```
 
-We can test our Policies and helper class in isolation inside but for everything outside we put a Stub.
+That is the tenant context's layout in the companion repo, kept as plain Java so it stays small. In a real Spring Modulith app the contract package would also hold the integration events (`TenantRegistered`, `TenantRenamed`) and the HTTP wire records, the impl would be `@Transactional`, and a `TenantController` would sit next to it — none of that changes the testing story below.
+
+We can test our policies and helper classes in isolation inside, but for everything outside we put a stub.
 
 The facade is a plain interface:
 
@@ -435,13 +436,15 @@ public interface TenantService {
 }
 ```
 
-And the Stub is a real, working in-memory implementation of it provided the tenant context for other BCs. 
+And the stub is a real, working in-memory implementation of it, provided by the tenant context for other BCs.
 Notice it is not a frozen `when(...).thenReturn(...)` answer. It behaves: it remembers what you registered, and it enforces the same rules:
 
 ```java
 public class TenantServiceStub implements TenantService {
 
     private final Map<TenantId, TenantDto> tenants = new LinkedHashMap<>();
+
+    // the constructor pre-seeds the map with the well-known test cards — see below
 
     @Override
     public TenantDto register(String slug, String displayName) {
@@ -457,7 +460,7 @@ public class TenantServiceStub implements TenantService {
 }
 ```
 
-So the Stub is one of two things. Either a small in-memory version of the facade, like above. Or an even simpler fake that returns constants. 
+So the stub is one of two things. Either a small in-memory version of the facade, like above. Or an even simpler fake that returns constants.
 With no logic inside, it just knows the answers the way a flash card does. 
 
 What keeps the second kind from turning into another Mockito is that those constants are not invented privately by every test that needs them. They are static test cards, published in the contract package right next to the facade. 
@@ -483,16 +486,25 @@ public final class TenantCards {
 }
 ```
 
-The stub ships pre-seeded with them. Downstream nobody programs answers into a mock.
+The stub ships pre-seeded with them:
+
+```java
+public TenantServiceStub() {
+    tenants.put(TenantCards.NORMAL_TENANT.id(), TenantCards.NORMAL_TENANT);
+    tenants.put(TenantCards.SUSPENDED_TENANT.id(), TenantCards.SUSPENDED_TENANT);
+}
+```
+
+Downstream nobody programs answers into a mock.
 You pick what you need: `NORMAL_TENANT` for the happy path, `SUSPENDED_TENANT` when you want trouble, `UNKNOWN_TENANT` for the not-found branch. 
 
 And since the cards live in the contract package, when the tenant context changes what a suspended tenant means, the cards change in the same commit. 
 
 And every downstream test holding one feels it immediately.
 
-Internally we test if what we produce is the same as stub gets and every other bounded context gets the stub. (They can also get the real thing for IT, but it's not the point now)
+Internally we test that the real thing behaves the same as the stub, and every other bounded context gets the stub. (They can also get the real thing for IT, but that's not the point now.)
 
-The mechanics is one class. The contract written down as executable behavior:
+The mechanism is one class. The contract, written down as executable behavior:
 
 ```java
 public abstract class TenantServiceContract {
@@ -520,8 +532,9 @@ public abstract class TenantServiceContract {
     void renamesTenant() {
         TenantDto tenant = service().register("acme", "Acme Corp");
 
-        service().rename(tenant.id(), "Acme Holdings");
+        TenantDto renamed = service().rename(tenant.id(), "Acme Holdings");
 
+        assertEquals("Acme Holdings", renamed.displayName());
         assertEquals("Acme Holdings", service().find(tenant.id()).orElseThrow().displayName());
     }
 
@@ -547,7 +560,7 @@ class TenantServiceImplTest extends TenantServiceContract {
     @BeforeEach
     void setUp() throws Exception {
         // real schema in the container, service wired with the real repository
-        service = new TenantServiceImpl(new TenantRepository(dataSource));
+        service = new TenantServiceImpl(new JdbcTenantRepository(dataSource));
     }
 
     @Override
@@ -575,7 +588,7 @@ And when somebody really needs the real thing rather than the stub, the answer i
 
 It is the real implementation with in-memory variants of its dependencies. 
 
-`TenantRepository` is an interface with two implementations, the JDBC one and an in-memory one, so the same contract suite gets a third run.
+`TenantRepository` is an interface with two implementations, the JDBC one and an in-memory one (living in the test sources), so the same contract suite gets a third run.
 
 ```java
 class TenantServiceInMemoryTest extends TenantServiceContract {
@@ -620,40 +633,40 @@ class InvoiceServiceTest {
 }
 ```
 
-Then if we change contract our Stub tests fails and if the changes are meaningful for other contexts changes to the Stub propagate test failures outside.
+Then if we change the contract, our stub tests fail, and if the changes are meaningful for other contexts, changes to the stub propagate test failures outside.
 
-Imagine slugs become case-insensitive, or `rename` starts returning the old name, or registration starts in `SUSPENDED` until activation. 
+Imagine registration starts in `SUSPENDED` until activation, `rename` starts returning the old name, or a duplicate slug stops throwing and gets silently ignored instead.
 
-When you change the implementation, `TenantServiceImplTest` goes red, you fix the contract suite — and now `TenantServiceStubTest` is red until the stub follows. 
+When you change the implementation, `TenantServiceImplTest` (and `TenantServiceInMemoryTest`) go red, you fix the contract suite — and now `TenantServiceStubTest` is red until the stub follows.
 
 One fix, in one place, shipped by the context that owns the rule. And the moment the stub starts answering differently, every consuming context's tests run against the new reality. `InvoiceServiceTest` breaks only if the change actually matters to billing. Compare that with hunting down every `when(tenantService.find(...))` scattered across the repo.
 
-Just like we do with contract tests on our API but here on the context level. Which is exactly what we want as BC is candidate for extraction anyway(just a candidate I'm not saying you should do it blindly).
+Just like we do with contract tests on our API, but here on the context level. Which is exactly what we want, as a BC is a candidate for extraction anyway (just a candidate — I'm not saying you should do it blindly).
 
-# How would first example would look like then?
+## How would the first example look then?
 
-1. If cross BC then contract testing with stubs preferably through BC facade
-2. If same BC but separate responsibility. I would probably architectured it to be truly independent and tested orchestration/choreography layer with integration test
-3. If nesting is the cleanest option and I have control over it. Then I would probably add some unit tests but tested overlay with real nested class.
-4. If nesting is the cleanest option and I don't have control over it. Then I would write thin anti corruption layer and treated it as under control thing then. Mayebe with stub for this foreign thing.
+1. If cross-BC, then contract testing with stubs, preferably through the BC facade.
+2. If same BC but separate responsibility, I would probably architect it to be truly independent and test the orchestration/choreography layer with an integration test.
+3. If nesting is the cleanest option and I have control over it, then I would probably add some unit tests, but test the overlay with the real nested class.
+4. If nesting is the cleanest option and I don't have control over it, then I would write a thin anti-corruption layer and treat it as a thing under my control. Maybe with a stub for the foreign thing.
 
-# So do you drop Mockito everywhere you go?
+## So do you drop Mockito everywhere you go?
 
-Not really. There is rarely any point in clearing the battle proven codebase from evey Mockito tests. 
+Not really. There is rarely any point in clearing a battle-proven codebase of every Mockito test.
 
-Even if doable, usually there is better stuff to do, and we can add e2e tests for circuital flows. 
+Even if doable, usually there is better stuff to do, and we can add e2e tests for crucial flows.
 
-But I do put an extra attention to code review on those problems when I notice any mocks in the PR, and it is easier for me to disallow mocks form the start on the new stuff.
-Especially in teh LLM era. Mockito makes it too easy for LLM to make wrong assumptions. 
-As well as fix in the Stub is fix in one place, fix in the mocks cascade across the repo so I feel that I wast less token in that way. Especially on find out the connections. I was saved by facade tests multiple times already.
+But I do pay extra attention to those problems in code review when I notice any mocks in the PR, and it is easier for me to disallow mocks from the start on new stuff.
+Especially in the LLM era. Mockito makes it too easy for an LLM to make wrong assumptions.
+Also, a fix in the stub is a fix in one place, while a fix in the mocks cascades across the repo, so I feel that I waste fewer tokens that way. Especially on finding out the connections. I was saved by facade tests multiple times already.
 
 All the code from this article — both failing examples and the stub/contract-test setup — is in the companion repo: [github.com/pawzem/IHateMockitoExamples](https://github.com/pawzem/IHateMockitoExamples). The build is red on purpose; the two failing tests are the whole point.
 
-Hope that the article was useful to you and if I've sent it to you over the code review then wow. I didn't expect you will actually read it thanks! :D
+Hope the article was useful to you, and if I've sent it to you over a code review then wow, I didn't expect you would actually read it. Thanks! :D
 
-# References
+## References
 
 - Companion repo with all the code from this article (the build is red on purpose): [github.com/pawzem/IHateMockitoExamples](https://github.com/pawzem/IHateMockitoExamples)
 
-### Ai disclaimer
-Opinions are entirely mine. Text is also mine(mostly, I did as well some styling). Code was generated by an AI entirely but with exact details what should be in there.
+## AI disclaimer
+Opinions are entirely mine. Text is also mine (mostly — some of the styling was done with AI). Code was generated entirely by an AI, but with exact details of what should be in there.
