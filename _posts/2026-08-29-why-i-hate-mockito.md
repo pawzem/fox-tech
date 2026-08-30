@@ -11,7 +11,7 @@ Both are good and useful things, but sometimes we forget why they exist and focu
 
 One of the symptoms of that approach, in my opinion, is the ubiquity of Mockito and similar mocking frameworks across several programming languages.
 
-My problem with Mockito is not that it is a bad library. It is that it makes the wrong thing the easy thing: a mock freezes a copy of somebody else's contract inside your test, nothing ever checks that copy against the real thing, and the copies multiply across the repo. It does have a legitimate niche (I'll get to it at the end), but what I've seen throughout my career is the exact opposite of a niche.
+My problem with Mockito is not that it is a bad library. It is that it makes the wrong thing the easy thing: a mock freezes a copy of somebody else's contract inside your test, nothing ever checks that copy against the real thing, and the copies multiply across the repo. It does have a legitimate niche (I'll get to it), but what I've seen throughout my career is the exact opposite of a niche.
 
 And while most projects face the issues I'm going to talk about, I rarely see the blame put on Mockito. The developer gets blamed, or the deadline, or the broken window somebody else left in the repo. All fair. But the tool that made the shortcut effortless deserves its share, and that is what this post is about.
 
@@ -660,7 +660,8 @@ The general rule I follow when one class needs another:
 1. If they live in different bounded contexts, contract testing with stubs, preferably through the BC facade.
 2. If they live in the same BC but have separate responsibilities, I would probably architect them to be truly independent and test the orchestration/choreography layer with an integration test.
 3. If one simply uses the other and I control both (our `PriceFormatter` and `Multiplier`), I add unit tests to the inner one and test the outer one with the real inner one.
-4. If one simply uses the other and I don't control the inner one, I write a thin anti-corruption layer and treat it as a thing under my control. The foreign thing gets a stub, or (see below) the one mock I tolerate.
+4. If one simply uses the other and I don't control the inner one, I write a thin anti-corruption layer and treat it as a thing under my control. The foreign thing gets a stub.
+5. If everything above fails, this is the niche. A third-party SDK that hands you final classes and static factories, where an in-memory fake would cost more than it is worth: it goes behind the anti-corruption layer from point 4, the layer's own test is the one place where a Mockito mock of the SDK is allowed, and everything else gets the layer's stub. The other case is a fire-and-forget side effect with no state to assert on ("the email really was handed to the mail client"), and even there a three-line fake that records the call usually does the job. One test class per foreign library, not one `@Mock` per collaborator.
 
 ## So do you drop Mockito everywhere you go?
 
@@ -671,8 +672,6 @@ Even if doable, usually there is better stuff to do, and we can add e2e tests fo
 But I do pay extra attention to those problems in code review when I notice any mocks in the PR, and it is easier for me to disallow mocks from the start on new stuff.
 Especially in the LLM era. Mockito makes it too easy for an LLM to make wrong assumptions.
 Also, a fix in the stub is a fix in one place, while a fix in the mocks cascades across the repo, so I feel that I waste fewer tokens that way, especially on the agent rediscovering how the modules are wired. Facade tests have saved me more than once already.
-
-And the niche I promised at the beginning? A third-party SDK that hands you final classes and static factories, where an in-memory fake would cost more than it is worth. It goes behind a thin anti-corruption layer, the layer's own test is the one place where a Mockito mock of the SDK is allowed, and everything else in the codebase gets the layer's stub. The other case is a fire-and-forget side effect with no state to assert on ("the email really was handed to the mail client"), and even there a three-line fake that records the call usually does the job. That is the whole niche: one test class per foreign library, not one `@Mock` per collaborator.
 
 All the code from this article, both failing examples and the stub/contract-test setup, is in the companion repo: [github.com/pawzem/IHateMockitoExamples](https://github.com/pawzem/IHateMockitoExamples). The build is red on purpose; the two failing tests are the whole point.
 
